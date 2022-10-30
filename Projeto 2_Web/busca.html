@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesquisa de Anime</title>
+    <!-- CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
+</head>
+<body>
+
+    <header>
+        <section>
+            <div class="container mt-5">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="alert alert-info text-center">
+                            <div>
+                                <h4 class="fw-bold">Pesquisa de Animes</h4>
+                            </div>
+                            <div>
+                                <a class="small text-decoration-none" onclick="logout()">Deseja sair? Clique aqui!</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </header>
+    
+    <main>
+        <section>
+            <div class="container">
+                    <input 
+                        type="text" 
+                        id="search_anime" 
+                        name="search_anime" 
+                        placeholder="Digite o anime que você quer procurar"
+                        class="form-control text-center"
+                    >
+            </div>
+        </section>
+
+        <section class="mt-4">
+            <div class="container">
+                <div class="row justify-content-center gy-4" id="animeList">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-u1OknCvxWvY5kfmNBILK2hRnQC3Pr17a+RTT6rIHI7NnikvbZlHgTPOOmMi466C8" crossorigin="anonymous"></script>
+    <script src="app.js"></script>
+
+    <script>
+        const serverEndPoint = "https://reqres.in/api";   
+        const localStorage = window.localStorage;
+        const endPoint = "https://api.jikan.moe/v4/anime";
+        const searchAnimeInput = document.getElementById("search_anime");
+        let timeout = null;
+        
+
+        ready(function(){
+            checkLoginState();
+        });
+
+        function ready(fn){
+            if(document.readyState !== "loading"){
+                fn()
+            } else{
+                document.addEventListener('DOMContentLoaded', fn);
+            }
+        }
+
+        searchAnimeInput.addEventListener("keydown", (e) => {
+            const anime = searchAnimeInput.value;
+
+            if(e.keyCode == 13){
+                searchAnime(anime);
+            }
+        
+        });
+
+        searchAnimeInput.addEventListener("keyup", (e) => {
+            const anime = searchAnimeInput.value;
+
+            clearTimeout(timeout);
+
+            // Make a new timeout set to go off in 1000ms (1 second)
+            timeout = setTimeout(function () {
+                searchAnime(anime);
+            }, 1000);
+        
+        });
+
+        searchAnimeInput.addEventListener("mouseleave", (e) => {
+            const anime = searchAnimeInput.value;
+            searchAnime(anime);
+        
+        });
+
+
+        function searchAnime(anime){
+            axios.get(endPoint + '?q=' + anime)
+            .then(function (response) {
+                // handle success
+                var result = response.data.data;
+                
+                loadAnime(result);
+            })
+            .catch(function (error) {
+                // handle error
+                console.log(response);
+                alert(error.response.data.error); // Mostra o erro de login.
+            });
+        }
+
+        function loadAnime(anime){
+
+            console.log(anime);
+
+            if(anime.length == 0){
+                console.log("nenhum anime encontrado");
+                document.querySelector("#animeList").innerHTML = ` 
+                    <div class="alert alert-danger text-center">Nenhum anime encontrado</div>
+                `;
+
+            } else{
+                let animeResults = anime.sort((a,b) => b.title > a.title ? -1 : true).map(function (element){
+                let title = element.title;
+                let image = element.images.webp.image_url;
+                let synopsis = element.synopsis ?? "Sinopse não informada";
+                let url = element.url;
+                let id = element.mal_id;
+
+                return `
+                    <div class="col-lg-3 col-sm-6">
+                        <div class="card">
+                            <img src="${image}" class="card-img-top" alt="${title}" style="height: 240px; width: auto; object-fit: cover" />
+                            <div class="card-body text-center">
+                                <h5 class="card-title">${title}</h5>
+                                <div>
+                                    <button class="btn btn-primary my-2" type="button" data-bs-toggle="collapse" data-bs-target="#animeCollapse${id}" aria-expanded="false" aria-controls="collapseExample">
+                                        Ver descrição
+                                    </button>
+                                    <div class="collapse" id="animeCollapse${id}">
+                                        <div class="">
+                                            ${synopsis}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> 
+                `
+            });
+
+            console.log(animeResults);
+
+            document.querySelector("#animeList").innerHTML = animeResults.join('\n');
+            }
+
+        }
+
+        function checkLoginState(){
+        
+            if(!localStorage.getItem('login')){
+                console.log('não tem login')
+            } else{
+                console.log(localStorage.getItem('login'))
+            }
+        }
+
+        function logout(){
+            localStorage.clear();
+            window.location.replace("index.html");
+        }
+
+    </script>
+</body>
+</html>
